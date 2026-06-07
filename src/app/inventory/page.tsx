@@ -19,7 +19,10 @@ export default function InventoryPage() {
     setItems(getItems());
   }, []);
 
-  const upload = useUploadItemsFlow(refreshItems);
+  const upload = useUploadItemsFlow({
+    onItemsSaved: refreshItems,
+    cancelViaHeader: true,
+  });
 
   useEffect(() => {
     refreshItems();
@@ -41,7 +44,9 @@ export default function InventoryPage() {
         uploadStaging={{
           open: upload.stagingOpen,
           locked: upload.stagingLocked,
+          phase: upload.stagingPhase,
           onClose: upload.closeStaging,
+          onHeaderAction: upload.onHeaderAction,
           panel: upload.stagingPanel,
         }}
       />

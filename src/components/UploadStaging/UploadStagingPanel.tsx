@@ -7,6 +7,8 @@ import { requestClothingTag } from "@/lib/tagClothingClient";
 import type { PendingClothingItem, TagResult } from "@/types/wardrobe";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export type UploadStagingPhase = "staging" | "analyzing" | "success";
+
 export interface UploadStagingPanelProps {
   files: File[];
   open: boolean;
@@ -14,9 +16,13 @@ export interface UploadStagingPanelProps {
   onSaved: (items: PendingClothingItem[]) => void;
   onAddMore: (files: File[]) => void;
   onLockChange?: (locked: boolean) => void;
+  onPhaseChange?: (phase: UploadStagingPhase) => void;
+  onRegisterHeaderAction?: (action: () => void) => void;
+  /** When true, dismiss/abort is handled by the toolbar header button */
+  cancelViaHeader?: boolean;
 }
 
-type FlowPhase = "staging" | "analyzing" | "success";
+type FlowPhase = UploadStagingPhase;
 
 type AnalysisStatus = "idle" | "analyzing" | "done" | "failed";
 
@@ -133,6 +139,9 @@ export function UploadStagingPanel({
   onSaved,
   onAddMore,
   onLockChange,
+  onPhaseChange,
+  onRegisterHeaderAction,
+  cancelViaHeader = false,
 }: UploadStagingPanelProps) {
   const addMoreRef = useRef<HTMLInputElement>(null);
   const analysisRunRef = useRef(0);
@@ -157,6 +166,10 @@ export function UploadStagingPanel({
   useEffect(() => {
     onLockChange?.(isLocked);
   }, [isLocked, onLockChange]);
+
+  useEffect(() => {
+    onPhaseChange?.(phase);
+  }, [onPhaseChange, phase]);
 
   useEffect(() => {
     if (!open) {
@@ -308,31 +321,19 @@ export function UploadStagingPanel({
     );
   };
 
-  const subtitle =
-    phase === "staging"
-      ? `${staged.length} photo${staged.length === 1 ? "" : "s"} selected`
-      : phase === "analyzing"
-        ? "Analyzing your items…"
-        : "Added to wardrobe";
+  useEffect(() => {
+    if (!onRegisterHeaderAction) return;
+    onRegisterHeaderAction(() => {
+      if (phase === "analyzing") handleAbortAnalysis();
+      else if (phase === "staging") handleClose();
+    });
+  }, [onRegisterHeaderAction, phase, staged]);
 
   if (!open) return null;
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-0.5">
-        <p className="text-base font-medium text-off-black">Add to wardrobe</p>
-        <p className="flex items-center gap-1.5 text-sm text-taupe">
-          {phase === "success" && (
-            <Check
-              size={14}
-              strokeWidth={2.5}
-              className="text-olive"
-              aria-hidden="true"
-            />
-          )}
-          {subtitle}
-        </p>
-      </div>
+    <div className="space-y-3">
+      <p className="text-base font-medium text-off-black">Add to wardrobe</p>
 
       {staged.length === 0 ? (
         <p className="py-2 text-center text-sm text-taupe">
@@ -371,25 +372,17 @@ export function UploadStagingPanel({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.16, ease: EASE_OUT }}
-            className="flex gap-2"
           >
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 rounded-full border border-stone/20 px-3 py-2.5 text-sm font-medium text-off-black transition-colors duration-150 hover:bg-stone/5 active:scale-[0.99]"
-            >
-              Cancel
-            </button>
             <button
               type="button"
               onClick={handleConfirm}
               disabled={staged.length === 0}
-              className="flex-1 rounded-full bg-off-black px-3 py-2.5 text-sm font-medium text-white transition-[transform,opacity] duration-150 hover:bg-off-black/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-full bg-off-black px-3 py-2.5 text-sm font-medium text-white transition-[transform,opacity] duration-150 hover:bg-off-black/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Add items
             </button>
           </motion.div>
-        ) : phase === "analyzing" ? (
+        ) : phase === "analyzing" && !cancelViaHeader ? (
           <motion.div
             key="analyzing-footer"
             initial={{ opacity: 0, y: 4 }}

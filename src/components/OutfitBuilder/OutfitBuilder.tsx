@@ -170,7 +170,7 @@ export function OutfitBuilder() {
     refreshCollections();
   }, [refreshCollections]);
 
-  const upload = useUploadItemsFlow(refreshWardrobe);
+  const upload = useUploadItemsFlow({ onItemsSaved: refreshWardrobe });
 
   const clearSavedState = useCallback(() => {
     setIsSaved(false);

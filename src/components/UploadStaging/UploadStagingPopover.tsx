@@ -2,7 +2,8 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { toolbarPopoverSurface } from "@/components/ui/toolbarStyles";
+const uploadPopoverSurface =
+  "rounded-2xl border border-stone/15 bg-white px-4 pt-4 pb-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
@@ -103,7 +104,7 @@ export function UploadStagingPopover({
           style={topOffset !== undefined ? { top: topOffset } : undefined}
           className={`absolute left-4 right-4 z-40 max-h-[min(60vh,420px)] overflow-y-auto ${
             topOffset === undefined ? "top-[calc(100%+8px)]" : ""
-          } ${toolbarPopoverSurface}`}
+          } ${uploadPopoverSurface}`}
           variants={
             shouldReduceMotion
               ? {

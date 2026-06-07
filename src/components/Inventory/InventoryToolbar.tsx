@@ -21,7 +21,9 @@ import type { InventoryFilters } from "@/types/wardrobe";
 export interface UploadStagingSlot {
   open: boolean;
   locked: boolean;
+  phase: "staging" | "analyzing" | "success";
   onClose: () => void;
+  onHeaderAction: () => void;
   panel: ReactNode;
 }
 
@@ -305,11 +307,22 @@ export function InventoryToolbar({
         />
         <div ref={addAnchorRef} className="shrink-0">
           <ToolbarIconButton
-            label="Add items"
-            icon={Plus}
-            onClick={onAddClick}
-            variant="primary"
-            strokeWidth={2}
+            label={
+              uploadStaging?.open
+                ? uploadStaging.phase === "analyzing"
+                  ? "Cancel analysis"
+                  : "Close add items"
+                : "Add items"
+            }
+            icon={uploadStaging?.open ? X : Plus}
+            onClick={
+              uploadStaging?.open ? uploadStaging.onHeaderAction : onAddClick
+            }
+            variant={uploadStaging?.open ? "secondary" : "primary"}
+            strokeWidth={uploadStaging?.open ? 1.5 : 2}
+            disabled={
+              uploadStaging?.open && uploadStaging.phase === "success"
+            }
             active={uploadStaging?.open}
             aria-expanded={uploadStaging?.open ?? false}
           />

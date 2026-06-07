@@ -85,7 +85,7 @@ export default function FavoritesPage() {
     setWardrobeCount(getItems().length);
   }, []);
 
-  const upload = useUploadItemsFlow(refresh);
+  const upload = useUploadItemsFlow({ onItemsSaved: refresh });
 
   useEffect(() => {
     refresh();

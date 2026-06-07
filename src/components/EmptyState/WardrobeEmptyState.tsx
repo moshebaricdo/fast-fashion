@@ -16,7 +16,7 @@ export function WardrobeEmptyState({
   onAction,
 }: WardrobeEmptyStateProps) {
   return (
-    <div className="flex flex-col items-center px-6 pt-10 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center px-6 py-10 text-center">
       <Icon size={32} strokeWidth={1.5} className="text-stone" />
       <p className="mt-4 max-w-xs text-sm leading-relaxed text-stone">
         {description}

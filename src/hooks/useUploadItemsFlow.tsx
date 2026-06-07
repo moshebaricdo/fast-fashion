@@ -2,16 +2,28 @@
 
 import { useCallback, useRef, useState } from "react";
 import { v4 as uuid } from "uuid";
-import { UploadStagingPanel } from "@/components/UploadStaging/UploadStagingPanel";
+import {
+  UploadStagingPanel,
+  type UploadStagingPhase,
+} from "@/components/UploadStaging/UploadStagingPanel";
 import { cropFilesToSquare } from "@/lib/cropImage";
 import { saveItem } from "@/lib/storage";
 import type { PendingClothingItem } from "@/types/wardrobe";
 
-export function useUploadItemsFlow(onItemsSaved?: () => void) {
+interface UseUploadItemsFlowOptions {
+  onItemsSaved?: () => void;
+  cancelViaHeader?: boolean;
+}
+
+export function useUploadItemsFlow(options?: UseUploadItemsFlowOptions) {
+  const { onItemsSaved, cancelViaHeader = false } = options ?? {};
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const headerActionRef = useRef<() => void>(() => {});
   const [pickedFiles, setPickedFiles] = useState<File[]>([]);
   const [stagingOpen, setStagingOpen] = useState(false);
   const [stagingLocked, setStagingLocked] = useState(false);
+  const [stagingPhase, setStagingPhase] =
+    useState<UploadStagingPhase>("staging");
 
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click();
@@ -21,6 +33,7 @@ export function useUploadItemsFlow(onItemsSaved?: () => void) {
     setStagingOpen(false);
     setPickedFiles([]);
     setStagingLocked(false);
+    setStagingPhase("staging");
   }, []);
 
   const handleFilesPicked = useCallback(async (fileList: FileList | null) => {
@@ -59,6 +72,10 @@ export function useUploadItemsFlow(onItemsSaved?: () => void) {
     );
   }, []);
 
+  const onHeaderAction = useCallback(() => {
+    headerActionRef.current();
+  }, []);
+
   const fileInput = (
     <input
       ref={fileInputRef}
@@ -78,6 +95,11 @@ export function useUploadItemsFlow(onItemsSaved?: () => void) {
       onSaved={handleSaved}
       onAddMore={handleAddMore}
       onLockChange={setStagingLocked}
+      onPhaseChange={setStagingPhase}
+      onRegisterHeaderAction={(action) => {
+        headerActionRef.current = action;
+      }}
+      cancelViaHeader={cancelViaHeader}
     />
   );
 
@@ -86,7 +108,9 @@ export function useUploadItemsFlow(onItemsSaved?: () => void) {
     fileInput,
     stagingOpen,
     stagingLocked,
+    stagingPhase,
     closeStaging,
+    onHeaderAction,
     stagingPanel,
   };
 }
