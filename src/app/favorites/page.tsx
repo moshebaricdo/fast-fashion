@@ -18,6 +18,7 @@ import { UploadStagingPopover } from "@/components/UploadStaging/UploadStagingPo
 import { PageToolbar } from "@/components/ui/PageToolbar";
 import { ToolbarIconButton } from "@/components/ui/ToolbarIconButton";
 import { toolbarPopoverSurface } from "@/components/ui/toolbarStyles";
+import { TabPageLayout } from "@/contexts/PageScrollContext";
 import { createCollection, getCollections, getFavoriteOutfits, getItems } from "@/lib/storage";
 import type { Collection, Outfit } from "@/types/wardrobe";
 
@@ -145,71 +146,73 @@ export default function FavoritesPage() {
   }, [refresh]);
 
   return (
-    <div className="min-w-0 pb-24">
-      <div ref={toolbarRef} className="relative">
-        <PageToolbar
-          title="Collections"
-          right={
-            <div ref={createAnchorRef} className="shrink-0">
-              <ToolbarIconButton
-                label="Create collection"
-                icon={Plus}
-                onClick={() => setCreateOpen((open) => !open)}
-                variant="primary"
-                active={createOpen}
-                aria-expanded={createOpen}
-                strokeWidth={2}
-              />
-            </div>
-          }
-        />
+    <TabPageLayout
+      header={
+        <div ref={toolbarRef} className="relative">
+          <PageToolbar
+            title="Collections"
+            right={
+              <div ref={createAnchorRef} className="shrink-0">
+                <ToolbarIconButton
+                  label="Create collection"
+                  icon={Plus}
+                  onClick={() => setCreateOpen((open) => !open)}
+                  variant="primary"
+                  active={createOpen}
+                  aria-expanded={createOpen}
+                  strokeWidth={2}
+                />
+              </div>
+            }
+          />
 
-        <div
-          ref={uploadAnchorRef}
-          className="pointer-events-none absolute bottom-0 left-1/2 h-0 w-px -translate-x-1/2"
-          aria-hidden="true"
-        />
+          <div
+            ref={uploadAnchorRef}
+            className="pointer-events-none absolute bottom-0 left-1/2 h-0 w-px -translate-x-1/2"
+            aria-hidden="true"
+          />
 
-        <UploadStagingPopover
-          open={upload.stagingOpen}
-          locked={upload.stagingLocked}
-          onClose={upload.closeStaging}
-          containerRef={toolbarRef}
-          anchorRef={uploadAnchorRef}
-        >
-          {upload.stagingPanel}
-        </UploadStagingPopover>
+          <UploadStagingPopover
+            open={upload.stagingOpen}
+            locked={upload.stagingLocked}
+            onClose={upload.closeStaging}
+            containerRef={toolbarRef}
+            anchorRef={uploadAnchorRef}
+          >
+            {upload.stagingPanel}
+          </UploadStagingPopover>
 
-        <AnimatePresence>
-          {createOpen && (
-            <motion.div
-              key="create-collection-popover"
-              style={{ top: popoverTop }}
-              className={`absolute left-4 right-4 z-40 ${toolbarPopoverSurface}`}
-              variants={
-                shouldReduceMotion
-                  ? {
-                      initial: { opacity: 0 },
-                      animate: { opacity: 1, transition: REDUCED },
-                      exit: { opacity: 0, transition: REDUCED },
-                    }
-                  : panelVariants(popoverOrigin)
-              }
-              initial="initial"
-              animate="animate"
-              exit="exit"
-            >
-              <SaveToCollectionPanel
-                collections={collections}
-                onSelectCollection={() => {}}
-                onCreateCollection={handleCreateCollection}
-                createOnly
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
+          <AnimatePresence>
+            {createOpen && (
+              <motion.div
+                key="create-collection-popover"
+                style={{ top: popoverTop }}
+                className={`absolute left-4 right-4 z-40 ${toolbarPopoverSurface}`}
+                variants={
+                  shouldReduceMotion
+                    ? {
+                        initial: { opacity: 0 },
+                        animate: { opacity: 1, transition: REDUCED },
+                        exit: { opacity: 0, transition: REDUCED },
+                      }
+                    : panelVariants(popoverOrigin)
+                }
+                initial="initial"
+                animate="animate"
+                exit="exit"
+              >
+                <SaveToCollectionPanel
+                  collections={collections}
+                  onSelectCollection={() => {}}
+                  onCreateCollection={handleCreateCollection}
+                  createOnly
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      }
+    >
       {wardrobeCount === 0 ? (
         <WardrobeEmptyState
           icon={Shirt}
@@ -236,6 +239,6 @@ export default function FavoritesPage() {
       )}
 
       {upload.fileInput}
-    </div>
+    </TabPageLayout>
   );
 }

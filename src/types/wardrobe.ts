@@ -33,7 +33,7 @@ export type Color =
   | "beige"
   | "other";
 
-export type Purpose = "casual" | "formal" | "sportswear" | "lounge";
+export type Purpose = "casual" | "formal" | "sportswear";
 
 /** Aliases used by AI tagging modules. */
 export type ClothingCategory = Category;
@@ -175,7 +175,7 @@ export const COLORS: Color[] = [
   "beige",
   "other",
 ];
-export const PURPOSES: Purpose[] = ["casual", "formal", "sportswear", "lounge"];
+export const PURPOSES: Purpose[] = ["casual", "formal", "sportswear"];
 
 /** Aliases for AI schema enums. */
 export const CLOTHING_CATEGORIES = CATEGORIES;
@@ -201,8 +201,10 @@ export const PURPOSE_LABELS: Record<Purpose, string> = {
   casual: "Casual",
   formal: "Formal",
   sportswear: "Sportswear",
-  lounge: "Lounge",
 };
+
+/** Legacy purpose stored on older items — treated as casual for compatibility. */
+export const LEGACY_LOUNGE_PURPOSE = "lounge" as const;
 
 /** Pre-seeded collection name suggestions shown on first save. */
 export const COLLECTION_NAME_SUGGESTIONS: readonly string[] = PURPOSES.map(

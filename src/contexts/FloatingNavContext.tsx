@@ -13,6 +13,8 @@ import {
 export type ItemDetailNavActions = {
   onEdit: () => void;
   onDelete: () => void;
+  editing?: boolean;
+  onCancel?: () => void;
 };
 
 type FloatingNavContextValue = {

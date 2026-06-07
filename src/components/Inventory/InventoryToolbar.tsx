@@ -290,6 +290,7 @@ export function InventoryToolbar({
                   onChange={(e) =>
                     onFiltersChange({ ...filters, search: e.target.value })
                   }
+                  onFocus={() => setFilterOpen(false)}
                   placeholder="Search wardrobe…"
                   className={`h-8 min-w-0 flex-1 rounded-full px-3.5 text-sm leading-none text-off-black placeholder:text-stone ${toolbarOutlineInput}`}
                 />
@@ -303,6 +304,7 @@ export function InventoryToolbar({
           icon={searchOpen ? X : Search}
           onClick={searchOpen ? closeSearch : openSearch}
           variant="secondary"
+          disabled={Boolean(uploadStaging?.open)}
           {...(searchOpen ? {} : OPTICAL_ICON)}
         />
         <div ref={addAnchorRef} className="shrink-0">
@@ -318,11 +320,8 @@ export function InventoryToolbar({
             onClick={
               uploadStaging?.open ? uploadStaging.onHeaderAction : onAddClick
             }
-            variant={uploadStaging?.open ? "secondary" : "primary"}
+            variant="primary"
             strokeWidth={uploadStaging?.open ? 1.5 : 2}
-            disabled={
-              uploadStaging?.open && uploadStaging.phase === "success"
-            }
             active={uploadStaging?.open}
             aria-expanded={uploadStaging?.open ?? false}
           />

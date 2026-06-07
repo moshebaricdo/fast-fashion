@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft } from "@/components/icons";
+import { ArrowLeft, Check } from "@/components/icons";
 import { DrawerPageShell } from "@/components/DrawerPageShell";
 import { FoundInFitsSection } from "@/components/Inventory/FoundInFitsSection";
 import { DetailScreen } from "@/components/ui/DetailScreen";
@@ -35,6 +35,9 @@ import {
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+const HEADER_SAVE_BUTTON =
+  "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-off-black px-3.5 text-sm font-medium text-white transition-[transform,opacity] duration-150 hover:bg-off-black/90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40";
+
 export default function InventoryItemDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -44,7 +47,7 @@ export default function InventoryItemDetailPage() {
     searchParams.get(RETURN_PATH_PARAM),
   );
 
-  const [item, setItem] = useState<ClothingItem | null>(null);
+  const [item, setItem] = useState<ClothingItem | null | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -103,15 +106,29 @@ export default function InventoryItemDetailPage() {
     setEditing(true);
   }, []);
 
+  const handleCancelEdit = useCallback(() => {
+    if (!item) return;
+    setEditing(false);
+    setDraft({
+      name: item.name,
+      category: item.category,
+      subcategory: item.subcategory,
+      color: item.color,
+      purpose: item.purpose,
+    });
+  }, [item]);
+
   const navActions = useMemo(
     () =>
       item
         ? {
             onEdit: handleEdit,
             onDelete: handleDelete,
+            editing,
+            onCancel: handleCancelEdit,
           }
         : null,
-    [item, handleEdit, handleDelete],
+    [item, handleEdit, handleDelete, editing, handleCancelEdit],
   );
 
   useItemDetailNav(navActions);
@@ -143,7 +160,35 @@ export default function InventoryItemDetailPage() {
     [item],
   );
 
-  if (!item) {
+  if (item === undefined) {
+    return (
+      <DrawerPageShell>
+        <DetailScreen onDismiss={dismiss}>
+          <div className="flex min-h-full flex-col">
+            <StickyChrome className="shrink-0">
+              <div className="px-4">
+                <ToolbarIconButton
+                  label="Back"
+                  icon={ArrowLeft}
+                  onClick={dismiss}
+                  variant="secondary"
+                />
+              </div>
+            </StickyChrome>
+            <div className="flex flex-1 items-center justify-center py-24">
+              <div
+                className="h-6 w-6 animate-spin rounded-full border-2 border-stone/20 border-t-off-black"
+                role="status"
+                aria-label="Loading item"
+              />
+            </div>
+          </div>
+        </DetailScreen>
+      </DrawerPageShell>
+    );
+  }
+
+  if (item === null) {
     return (
       <DrawerPageShell>
         <DetailScreen onDismiss={requestClose}>
@@ -173,13 +218,26 @@ export default function InventoryItemDetailPage() {
     <DrawerPageShell>
       <DetailScreen onDismiss={requestClose}>
         <StickyChrome className="shrink-0">
-          <div className="px-4">
+          <div className="flex items-center justify-between px-4">
             <ToolbarIconButton
               label="Back"
               icon={ArrowLeft}
               onClick={requestClose}
               variant="secondary"
             />
+            <div className="flex h-8 min-w-[5.25rem] items-center justify-end">
+              {editing ? (
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving || !draft.name.trim()}
+                  className={HEADER_SAVE_BUTTON}
+                >
+                  <Check size={15} strokeWidth={2.25} />
+                  Save
+                </button>
+              ) : null}
+            </div>
           </div>
         </StickyChrome>
 
@@ -202,10 +260,10 @@ export default function InventoryItemDetailPage() {
                 }
                 editing={editing}
                 autoFocus={editing}
-                className="mt-4 text-lg font-semibold leading-snug tracking-tight text-off-black md:mt-0"
+                className="mt-5 text-lg font-semibold leading-snug tracking-tight text-off-black md:mt-0"
               />
 
-              <div className={editing ? "mt-4 space-y-4 md:mt-4" : "mt-3 md:mt-4"}>
+              <div className={editing ? "mt-5 space-y-4 md:mt-5" : "mt-4 md:mt-5"}>
                 {editing ? (
                   <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -298,33 +356,24 @@ export default function InventoryItemDetailPage() {
                     </select>
                   </label>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saving || !draft.name.trim()}
-                  className="w-full rounded-full bg-off-black py-3 text-sm font-medium text-white transition-transform duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
-                >
-                  {saving ? "Saving…" : "Save changes"}
-                </button>
               </div>
             ) : (
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-4 text-sm">
                 <div>
                   <dt className="text-stone">Category</dt>
-                  <dd className="mt-0.5 capitalize text-off-black">
+                  <dd className="mt-1.5 capitalize text-off-black">
                     {SLOT_LABELS[item.category]}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-stone">Subcategory</dt>
-                  <dd className="mt-0.5 capitalize text-off-black">
+                  <dd className="mt-1.5 capitalize text-off-black">
                     {item.subcategory}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-stone">Color</dt>
-                  <dd className="mt-0.5 inline-flex items-center gap-2 capitalize text-off-black">
+                  <dd className="mt-1.5 inline-flex items-center gap-2 capitalize text-off-black">
                     <span
                       className="h-3 w-3 rounded-full border border-stone/20"
                       style={{ backgroundColor: swatch }}
@@ -334,7 +383,7 @@ export default function InventoryItemDetailPage() {
                 </div>
                 <div>
                   <dt className="text-stone">Purpose</dt>
-                  <dd className="mt-0.5 capitalize text-off-black">
+                  <dd className="mt-1.5 capitalize text-off-black">
                     {PURPOSE_LABELS[item.purpose]}
                   </dd>
                 </div>

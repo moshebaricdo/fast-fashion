@@ -2,10 +2,10 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Plus, X } from "@/components/icons";
-import { cropImageToSquare } from "@/lib/cropImage";
 import { requestClothingTag } from "@/lib/tagClothingClient";
 import type { PendingClothingItem, TagResult } from "@/types/wardrobe";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cropImageToSquare } from "@/lib/cropImage";
 
 export type UploadStagingPhase = "staging" | "analyzing" | "success";
 
@@ -30,11 +30,13 @@ interface StagedFile {
   id: string;
   file: File;
   previewUrl: string;
+  imageDataUrl?: string;
   analysisStatus: AnalysisStatus;
   tag?: TagResult;
 }
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+const SUCCESS_AUTO_CLOSE_MS = 2000;
 
 const FALLBACK_TAG: TagResult = {
   name: "",
@@ -45,8 +47,9 @@ const FALLBACK_TAG: TagResult = {
   confidence: 0,
 };
 
-const SUCCESS_HOLD_MS = 1000;
 const TILE_CLASS = "relative size-11 shrink-0 overflow-hidden rounded-lg";
+const PRIMARY_BUTTON =
+  "w-full rounded-full bg-off-black px-3 py-2.5 text-sm font-medium text-white transition-[transform,opacity] duration-150 hover:bg-off-black/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40";
 
 function createStagedFile(file: File): StagedFile {
   return {
@@ -75,7 +78,9 @@ function ImageTile({
 }) {
   const showShimmer =
     phase === "analyzing" && entry.analysisStatus === "analyzing";
-  const showCheck = phase === "success";
+  const showCheck =
+    phase === "success" ||
+    (phase === "analyzing" && entry.analysisStatus === "done");
 
   return (
     <div className={`${TILE_CLASS} bg-stone/8 ring-1 ring-stone/10`}>
@@ -145,8 +150,10 @@ export function UploadStagingPanel({
 }: UploadStagingPanelProps) {
   const addMoreRef = useRef<HTMLInputElement>(null);
   const analysisRunRef = useRef(0);
+  const successTimerRef = useRef<number | null>(null);
   const [staged, setStaged] = useState<StagedFile[]>([]);
   const [phase, setPhase] = useState<FlowPhase>("staging");
+  const [savedCount, setSavedCount] = useState(0);
 
   const isLocked = phase === "analyzing" || phase === "success";
 
@@ -156,7 +163,12 @@ export function UploadStagingPanel({
 
   const reset = useCallback(() => {
     analysisRunRef.current += 1;
+    if (successTimerRef.current !== null) {
+      window.clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
     setPhase("staging");
+    setSavedCount(0);
     setStaged((current) => {
       revokeAll(current);
       return [];
@@ -183,7 +195,17 @@ export function UploadStagingPanel({
       return images.map(createStagedFile);
     });
     setPhase("staging");
+    setSavedCount(0);
   }, [files, open, reset, revokeAll]);
+
+  useEffect(
+    () => () => {
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const handleClose = () => {
     if (isLocked) return;
@@ -215,31 +237,22 @@ export function UploadStagingPanel({
     if (addMoreRef.current) addMoreRef.current.value = "";
   };
 
-  const finishAndSave = useCallback(
-    async (entries: StagedFile[]) => {
-      const pending = await Promise.all(
-        entries.map(async (entry) => {
-          const tag = entry.tag ?? FALLBACK_TAG;
-          const name = tag.name.trim() || fallbackName(entry.file);
+  const buildPendingItems = useCallback(
+    (entries: StagedFile[]): PendingClothingItem[] =>
+      entries.map((entry) => {
+        const tag = entry.tag ?? FALLBACK_TAG;
+        const name = tag.name.trim() || fallbackName(entry.file);
 
-          return {
-            imageUrl: await cropImageToSquare(entry.file),
-            name,
-            category: tag.category,
-            subcategory: tag.subcategory,
-            color: tag.color,
-            purpose: tag.purpose,
-          } satisfies PendingClothingItem;
-        }),
-      );
-
-      onSaved(pending);
-      revokeAll(entries);
-      setStaged([]);
-      setPhase("staging");
-      onClose();
-    },
-    [onClose, onSaved, revokeAll],
+        return {
+          imageUrl: entry.imageDataUrl ?? entry.previewUrl,
+          name,
+          category: tag.category,
+          subcategory: tag.subcategory,
+          color: tag.color,
+          purpose: tag.purpose,
+        };
+      }),
+    [],
   );
 
   const runAnalysis = useCallback(
@@ -247,61 +260,86 @@ export function UploadStagingPanel({
       const runId = ++analysisRunRef.current;
       setPhase("analyzing");
 
-      setStaged((current) =>
-        current.map((entry) => ({
+      const withImages: StagedFile[] = [];
+      for (const entry of entries) {
+        if (runId !== analysisRunRef.current) return;
+        try {
+          const imageDataUrl = await cropImageToSquare(entry.file);
+          withImages.push({ ...entry, imageDataUrl });
+        } catch {
+          withImages.push({ ...entry, imageDataUrl: entry.previewUrl });
+        }
+      }
+
+      setStaged(
+        withImages.map((entry) => ({
           ...entry,
           analysisStatus: "analyzing",
           tag: undefined,
         })),
       );
 
-      await Promise.all(
-        entries.map(async (entry) => {
-          try {
-            const { tag } = await requestClothingTag(entry.file);
-            if (runId !== analysisRunRef.current) return;
+      const analyzed: StagedFile[] = [];
+      for (const entry of withImages) {
+        if (runId !== analysisRunRef.current) return;
 
-            setStaged((current) =>
-              current.map((item) =>
-                item.id === entry.id
-                  ? { ...item, analysisStatus: "done", tag }
-                  : item,
-              ),
-            );
-          } catch {
-            if (runId !== analysisRunRef.current) return;
+        setStaged((current) =>
+          current.map((item) =>
+            item.id === entry.id
+              ? { ...item, analysisStatus: "analyzing" }
+              : item,
+          ),
+        );
 
-            setStaged((current) =>
-              current.map((item) =>
-                item.id === entry.id
-                  ? {
-                      ...item,
-                      analysisStatus: "failed",
-                      tag: {
-                        ...FALLBACK_TAG,
-                        name: fallbackName(entry.file),
-                      },
-                    }
-                  : item,
-              ),
-            );
-          }
-        }),
-      );
+        try {
+          const { tag } = await requestClothingTag(entry.file);
+          if (runId !== analysisRunRef.current) return;
+
+          const nextEntry: StagedFile = {
+            ...entry,
+            analysisStatus: "done",
+            tag,
+          };
+          analyzed.push(nextEntry);
+
+          setStaged((current) =>
+            current.map((item) => (item.id === entry.id ? nextEntry : item)),
+          );
+        } catch {
+          if (runId !== analysisRunRef.current) return;
+
+          const nextEntry: StagedFile = {
+            ...entry,
+            analysisStatus: "failed",
+            tag: {
+              ...FALLBACK_TAG,
+              name: fallbackName(entry.file),
+            },
+          };
+          analyzed.push(nextEntry);
+
+          setStaged((current) =>
+            current.map((item) => (item.id === entry.id ? nextEntry : item)),
+          );
+        }
+      }
 
       if (runId !== analysisRunRef.current) return;
 
+      const pending = buildPendingItems(analyzed);
+      onSaved(pending);
+      setSavedCount(pending.length);
       setPhase("success");
-      await new Promise((resolve) => setTimeout(resolve, SUCCESS_HOLD_MS));
 
-      if (runId !== analysisRunRef.current) return;
-
-      setStaged((current) => {
-        void finishAndSave(current);
-        return current;
-      });
+      successTimerRef.current = window.setTimeout(() => {
+        if (runId !== analysisRunRef.current) return;
+        revokeAll(analyzed);
+        setStaged([]);
+        setPhase("staging");
+        onClose();
+      }, SUCCESS_AUTO_CLOSE_MS);
     },
-    [finishAndSave],
+    [buildPendingItems, onClose, onSaved, revokeAll],
   );
 
   const handleConfirm = () => {
@@ -311,12 +349,18 @@ export function UploadStagingPanel({
 
   const handleAbortAnalysis = () => {
     analysisRunRef.current += 1;
+    if (successTimerRef.current !== null) {
+      window.clearTimeout(successTimerRef.current);
+      successTimerRef.current = null;
+    }
     setPhase("staging");
+    setSavedCount(0);
     setStaged((current) =>
       current.map((entry) => ({
         ...entry,
         analysisStatus: "idle",
         tag: undefined,
+        imageDataUrl: undefined,
       })),
     );
   };
@@ -325,22 +369,25 @@ export function UploadStagingPanel({
     if (!onRegisterHeaderAction) return;
     onRegisterHeaderAction(() => {
       if (phase === "analyzing") handleAbortAnalysis();
+      else if (phase === "success") onClose();
       else if (phase === "staging") handleClose();
     });
-  }, [onRegisterHeaderAction, phase, staged]);
+  }, [onRegisterHeaderAction, onClose, phase, staged]);
 
   if (!open) return null;
 
+  const savedLabel = savedCount === 1 ? "item" : "items";
+
   return (
-    <div className="space-y-3">
+    <div>
       <p className="text-base font-medium text-off-black">Add to wardrobe</p>
 
       {staged.length === 0 ? (
-        <p className="py-2 text-center text-sm text-taupe">
+        <p className="mt-[18px] py-2 text-center text-sm text-taupe">
           No images selected. Choose photos to continue.
         </p>
       ) : (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="mt-[18px] flex flex-wrap gap-1.5">
           {staged.map((entry, index) => (
             <ImageTile
               key={entry.id}
@@ -368,6 +415,7 @@ export function UploadStagingPanel({
         {phase === "staging" ? (
           <motion.div
             key="staging-footer"
+            className="mt-5"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -377,14 +425,16 @@ export function UploadStagingPanel({
               type="button"
               onClick={handleConfirm}
               disabled={staged.length === 0}
-              className="w-full rounded-full bg-off-black px-3 py-2.5 text-sm font-medium text-white transition-[transform,opacity] duration-150 hover:bg-off-black/90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+              className={PRIMARY_BUTTON}
             >
-              Add items
+              Add {staged.length > 0 ? staged.length : ""}{" "}
+              {staged.length === 1 ? "item" : "items"}
             </button>
           </motion.div>
-        ) : phase === "analyzing" && !cancelViaHeader ? (
+        ) : phase === "analyzing" ? (
           <motion.div
             key="analyzing-footer"
+            className="mt-5"
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
@@ -393,9 +443,27 @@ export function UploadStagingPanel({
             <button
               type="button"
               onClick={handleAbortAnalysis}
-              className="w-full rounded-full border border-stone/20 px-3 py-2.5 text-sm font-medium text-off-black transition-colors duration-150 hover:bg-stone/5 active:scale-[0.99]"
+              className={PRIMARY_BUTTON}
             >
               Cancel
+            </button>
+          </motion.div>
+        ) : phase === "success" ? (
+          <motion.div
+            key="success-footer"
+            className="mt-5"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.16, ease: EASE_OUT }}
+          >
+            <button
+              type="button"
+              disabled
+              className={`${PRIMARY_BUTTON} inline-flex items-center justify-center gap-2`}
+            >
+              <Check size={16} strokeWidth={2.25} />
+              {savedCount} {savedLabel} added
             </button>
           </motion.div>
         ) : null}

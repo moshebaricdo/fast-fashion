@@ -6,7 +6,7 @@ import {
   UploadStagingPanel,
   type UploadStagingPhase,
 } from "@/components/UploadStaging/UploadStagingPanel";
-import { cropFilesToSquare } from "@/lib/cropImage";
+import { cropFilesToSquare, MAX_UPLOAD_BATCH } from "@/lib/cropImage";
 import { saveItem } from "@/lib/storage";
 import type { PendingClothingItem } from "@/types/wardrobe";
 
@@ -44,7 +44,7 @@ export function useUploadItemsFlow(options?: UseUploadItemsFlowOptions) {
     );
     if (images.length === 0) return;
 
-    const cropped = await cropFilesToSquare(images);
+    const cropped = await cropFilesToSquare(images.slice(0, MAX_UPLOAD_BATCH));
     setPickedFiles(cropped);
     setStagingOpen(true);
 
@@ -61,9 +61,8 @@ export function useUploadItemsFlow(options?: UseUploadItemsFlowOptions) {
         }),
       );
       onItemsSaved?.();
-      closeStaging();
     },
-    [closeStaging, onItemsSaved],
+    [onItemsSaved],
   );
 
   const handleAddMore = useCallback((files: File[]) => {

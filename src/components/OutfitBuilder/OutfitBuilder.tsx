@@ -35,6 +35,7 @@ import {
 } from "@/lib/storage";
 import {
   areItemsCompatible,
+  canBuildOutfitForPurpose,
   shuffleFullOutfit,
   shuffleSlot,
 } from "@/lib/shuffleOutfit";
@@ -397,9 +398,11 @@ export function OutfitBuilder() {
   }
 
   const isWardrobeEmpty = items.length === 0;
+  const canBuildOutfit = canBuildOutfitForPurpose(items, purpose);
+  const showPurposeEmptyState = !isWardrobeEmpty && !canBuildOutfit;
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <div ref={toolbarRef} className="relative shrink-0">
         <PageToolbar
           title="Today's Fit"
@@ -502,6 +505,16 @@ export function OutfitBuilder() {
             icon={Shuffle}
             description="Add your first pieces to start getting daily outfit suggestions."
             onAction={upload.openFilePicker}
+            centered={false}
+          />
+        </div>
+      ) : showPurposeEmptyState ? (
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          <WardrobeEmptyState
+            icon={Shuffle}
+            description={`Add more ${PURPOSE_LABELS[purpose].toLowerCase()} pieces to see outfits.`}
+            onAction={upload.openFilePicker}
+            centered={false}
           />
         </div>
       ) : (

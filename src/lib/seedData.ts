@@ -97,9 +97,9 @@ export const SEED_ITEMS: ClothingItem[] = [
     "bottom",
     "shorts",
     "stone",
-    "lounge",
+    "casual",
   ),
-  item("bottom-7", "taupe sweatpants", "bottom", "sweatpants", "taupe", "lounge"),
+  item("bottom-7", "taupe sweatpants", "bottom", "sweatpants", "taupe", "casual"),
   item("shoe-1", "white sneakers", "shoe", "sneakers", "white", "casual"),
   item(
     "shoe-2",

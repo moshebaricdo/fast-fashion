@@ -1,5 +1,6 @@
 "use client";
 
+import { usePageScroll } from "@/contexts/PageScrollContext";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface StickyChromeProps {
@@ -28,17 +29,23 @@ function resolveScrollTarget(node: HTMLElement | null): HTMLElement | Window {
   return window;
 }
 
-/** Pins header chrome; compacts vertical padding slightly once the page scrolls. */
+/** Pins header chrome above scrollable page content. */
 export function StickyChrome({
   children,
   className = "",
   transparentUntilScroll = true,
 }: StickyChromeProps) {
+  const pageScroll = usePageScroll();
   const [scrolled, setScrolled] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const target = resolveScrollTarget(rootRef.current);
+    if (!transparentUntilScroll) return;
+
+    const target =
+      pageScroll?.scrollRef.current ??
+      resolveScrollTarget(rootRef.current);
+
     const update = () => {
       const offset =
         target === window
@@ -50,7 +57,7 @@ export function StickyChrome({
     update();
     target.addEventListener("scroll", update, { passive: true });
     return () => target.removeEventListener("scroll", update);
-  }, []);
+  }, [pageScroll, transparentUntilScroll]);
 
   const backgroundClass = transparentUntilScroll
     ? scrolled
@@ -58,12 +65,12 @@ export function StickyChrome({
       : "bg-transparent"
     : "bg-background";
 
+  const positionClass = pageScroll?.pinned ? "" : "sticky top-0 z-30";
+
   return (
     <div
       ref={rootRef}
-      className={`sticky top-0 z-30 transition-[padding,background-color] duration-200 ease-out ${backgroundClass} ${
-        scrolled ? "pt-3 pb-3" : "pt-4 pb-4"
-      } ${className}`}
+      className={`${positionClass} isolate [transform:translateZ(0)] py-[22px] transition-[background-color] duration-200 ease-out ${backgroundClass} ${className}`}
     >
       {children}
     </div>

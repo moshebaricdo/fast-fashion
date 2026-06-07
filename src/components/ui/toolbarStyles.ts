@@ -5,4 +5,4 @@ export const toolbarOutlineInput = `${toolbarOutlineBorder} bg-white outline-non
 
 /** Popover panels anchored from toolbar controls — matches grid card radius. */
 export const toolbarPopoverSurface =
-  "rounded-2xl border border-stone/15 bg-white p-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)]";
+  "rounded-2xl border border-stone/15 bg-white px-4 pt-4 pb-3 shadow-[0_8px_32px_rgba(0,0,0,0.1)]";

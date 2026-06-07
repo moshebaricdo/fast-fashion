@@ -9,6 +9,7 @@ import {
   Shirt,
   ShirtFilled,
   Trash2,
+  X,
 } from "@/components/icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,6 +29,7 @@ import {
   navMorphTransition,
   navPillTransition,
 } from "@/lib/motion";
+import { FLOATING_NAV_IOS_LIFT } from "@/lib/navLayout";
 
 type NavIcon = ComponentType<LucideProps>;
 
@@ -71,7 +73,7 @@ const REDUCED_MOTION = { duration: 0.12 };
 function isDetailActionRoute(pathname: string): boolean {
   return (
     /^\/inventory\/[^/]+$/.test(pathname) ||
-    /^\/favorites\/[^/]+\/[^/]+$/.test(pathname)
+    /^\/favorites\/[^/]+(\/[^/]+)?$/.test(pathname)
   );
 }
 
@@ -217,7 +219,12 @@ export default function FloatingNav() {
   const contentExit = { opacity: 0, transform: "scale(0.97)" };
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-4">
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 md:pb-4"
+      style={{
+        paddingBottom: `calc(0.75rem + env(safe-area-inset-bottom) + ${FLOATING_NAV_IOS_LIFT})`,
+      }}
+    >
       <motion.nav
         layout
         aria-label={isDetailActions ? "Detail actions" : "Main navigation"}
@@ -236,13 +243,17 @@ export default function FloatingNav() {
               className="flex items-center gap-1.5"
             >
               <IconActionButton
-                label="Edit item"
-                icon={Pencil}
-                onClick={() => itemActions?.onEdit()}
+                label={itemActions?.editing ? "Cancel editing" : "Edit"}
+                icon={itemActions?.editing ? X : Pencil}
+                onClick={() =>
+                  itemActions?.editing
+                    ? itemActions.onCancel?.()
+                    : itemActions?.onEdit()
+                }
                 disabled={!actionsReady}
               />
               <IconActionButton
-                label="Delete item"
+                label="Delete"
                 icon={Trash2}
                 onClick={() => itemActions?.onDelete()}
                 disabled={!actionsReady}

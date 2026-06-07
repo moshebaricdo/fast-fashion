@@ -5,6 +5,7 @@ import { Shirt } from "@/components/icons";
 import { WardrobeEmptyState } from "@/components/EmptyState/WardrobeEmptyState";
 import { InventoryToolbar } from "@/components/Inventory/InventoryToolbar";
 import { InventoryGrid } from "@/components/InventoryGrid/InventoryGrid";
+import { TabPageLayout } from "@/contexts/PageScrollContext";
 import { useUploadItemsFlow } from "@/hooks/useUploadItemsFlow";
 import { filterItems } from "@/lib/filterItems";
 import { getItems } from "@/lib/storage";
@@ -36,21 +37,23 @@ export default function InventoryPage() {
   const isWardrobeEmpty = items.length === 0;
 
   return (
-    <div className="relative min-h-full min-w-0">
-      <InventoryToolbar
-        filters={filters}
-        onFiltersChange={setFilters}
-        onAddClick={upload.openFilePicker}
-        uploadStaging={{
-          open: upload.stagingOpen,
-          locked: upload.stagingLocked,
-          phase: upload.stagingPhase,
-          onClose: upload.closeStaging,
-          onHeaderAction: upload.onHeaderAction,
-          panel: upload.stagingPanel,
-        }}
-      />
-
+    <TabPageLayout
+      header={
+        <InventoryToolbar
+          filters={filters}
+          onFiltersChange={setFilters}
+          onAddClick={upload.openFilePicker}
+          uploadStaging={{
+            open: upload.stagingOpen,
+            locked: upload.stagingLocked,
+            phase: upload.stagingPhase,
+            onClose: upload.closeStaging,
+            onHeaderAction: upload.onHeaderAction,
+            panel: upload.stagingPanel,
+          }}
+        />
+      }
+    >
       {isWardrobeEmpty ? (
         <WardrobeEmptyState
           icon={Shirt}
@@ -64,6 +67,6 @@ export default function InventoryPage() {
       )}
 
       {upload.fileInput}
-    </div>
+    </TabPageLayout>
   );
 }

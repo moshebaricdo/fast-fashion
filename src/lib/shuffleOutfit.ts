@@ -8,24 +8,25 @@ import type {
   SlotKey,
   Subcategory,
 } from "@/types/wardrobe";
-import { LAYER_SUBCATEGORIES } from "@/types/wardrobe";
+import { LAYER_SUBCATEGORIES, LEGACY_LOUNGE_PURPOSE } from "@/types/wardrobe";
 
 const FORMAL_SHOES = new Set(["loafers", "boots"]);
 
 /** Whether an item's purpose is compatible with the selected outfit purpose. */
 export function isPurposeCompatible(
-  itemPurpose: Purpose,
+  itemPurpose: Purpose | typeof LEGACY_LOUNGE_PURPOSE | string,
   selectedPurpose: Purpose,
 ): boolean {
+  const normalized =
+    itemPurpose === LEGACY_LOUNGE_PURPOSE ? "casual" : (itemPurpose as Purpose);
+
   switch (selectedPurpose) {
     case "casual":
-      return itemPurpose === "casual";
+      return normalized === "casual";
     case "formal":
-      return itemPurpose === "formal" || itemPurpose === "casual";
+      return normalized === "formal" || normalized === "casual";
     case "sportswear":
-      return itemPurpose === "sportswear";
-    case "lounge":
-      return itemPurpose === "lounge" || itemPurpose === "casual";
+      return normalized === "sportswear";
     default:
       return false;
   }
@@ -69,10 +70,6 @@ export function areItemsCompatible(
     bottom.purpose === "sportswear" &&
     FORMAL_SHOES.has(shoe.subcategory)
   ) {
-    return false;
-  }
-
-  if (bottom.purpose === "lounge" && shoe.purpose === "formal") {
     return false;
   }
 
@@ -226,6 +223,14 @@ export function shuffleFullOutfit(
   }
 
   return null;
+}
+
+/** Whether the wardrobe has enough compatible pieces to build a full outfit. */
+export function canBuildOutfitForPurpose(
+  items: ClothingItem[],
+  purpose: Purpose,
+): boolean {
+  return shuffleFullOutfit(items, purpose, {}) !== null;
 }
 
 /** Shuffles unlocked slots for a full outfit refresh. */

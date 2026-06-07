@@ -1,9 +1,7 @@
 "use client";
 
 import { Plus } from "@/components/icons";
-import { Chip } from "@/components/ui/Chip";
 import type { Collection } from "@/types/wardrobe";
-import { COLLECTION_NAME_SUGGESTIONS } from "@/types/wardrobe";
 import { useMemo, useState } from "react";
 
 interface SaveToCollectionPanelProps {
@@ -14,7 +12,6 @@ interface SaveToCollectionPanelProps {
   createOnly?: boolean;
 }
 
-const rowLabelClass = "text-sm font-medium text-off-black";
 const headingClass = "text-base font-medium text-off-black";
 
 export function SaveToCollectionPanel({
@@ -31,14 +28,6 @@ export function SaveToCollectionPanel({
   const existingNames = useMemo(
     () => new Set(collections.map((collection) => collection.name.toLowerCase())),
     [collections],
-  );
-
-  const availableSuggestions = useMemo(
-    () =>
-      COLLECTION_NAME_SUGGESTIONS.filter(
-        (name) => !existingNames.has(name.toLowerCase()),
-      ),
-    [existingNames],
   );
 
   const trimmedDraft = draftName.trim();
@@ -92,56 +81,28 @@ export function SaveToCollectionPanel({
         </>
       ) : (
         <div>
-          <div className="space-y-3.5">
-            <p className={headingClass}>
-              {collections.length === 0 && !createOnly
-                ? "Create your first collection"
-                : "New collection"}
-            </p>
-            <div className="space-y-2">
-              <label htmlFor="collection-name" className={rowLabelClass}>
-                Name
-              </label>
-              <input
-                id="collection-name"
-                type="text"
-                value={draftName}
-                onChange={(event) => setDraftName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    handleCreate();
-                  }
-                }}
-                placeholder="Collection name"
-                className="h-10 w-full rounded-full border border-stone/25 bg-white px-3.5 text-sm text-off-black placeholder:text-stone focus:border-stone/45 focus:outline-none"
-              />
-            </div>
-          </div>
+          <p className={headingClass}>
+            {collections.length === 0 && !createOnly
+              ? "Create your first collection"
+              : "New collection"}
+          </p>
+          <input
+            id="collection-name"
+            type="text"
+            value={draftName}
+            onChange={(event) => setDraftName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                handleCreate();
+              }
+            }}
+            placeholder="Collection name"
+            aria-label="Collection name"
+            className="mt-[18px] h-10 w-full rounded-full border border-stone/25 bg-white px-3.5 text-sm text-off-black placeholder:text-stone focus:border-stone/45 focus:outline-none"
+          />
 
-          {availableSuggestions.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <p className={rowLabelClass}>Suggestions</p>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {availableSuggestions.map((name) => (
-                  <Chip
-                    key={name}
-                    size="sm"
-                    variant="accent"
-                    active={draftName === name}
-                    onClick={() => setDraftName(name)}
-                    className="h-9 py-0"
-                  >
-                    {name}
-                  </Chip>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div
-            className={`flex gap-2 ${availableSuggestions.length > 0 ? "mt-[18px]" : "mt-4"}`}
-          >
+          <div className="mt-5 flex gap-2">
             {collections.length > 0 && !createOnly ? (
               <button
                 type="button"

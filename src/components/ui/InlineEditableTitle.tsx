@@ -11,6 +11,9 @@ interface InlineEditableTitleProps {
   autoFocus?: boolean;
 }
 
+const fieldClass =
+  "m-0 block w-full min-w-0 appearance-none border-0 bg-transparent p-0 outline-none caret-off-black";
+
 export function InlineEditableTitle({
   value,
   onChange,
@@ -20,6 +23,7 @@ export function InlineEditableTitle({
   autoFocus = false,
 }: InlineEditableTitleProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const sharedClass = `${fieldClass} ${className}`;
 
   useEffect(() => {
     if (editing && autoFocus) {
@@ -28,27 +32,29 @@ export function InlineEditableTitle({
     }
   }, [editing, autoFocus]);
 
-  if (!editing) {
-    return <h1 className={className}>{value}</h1>;
-  }
-
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      onBlur={() => onCommit?.()}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") {
-          event.currentTarget.blur();
-        }
-        if (event.key === "Escape") {
-          event.currentTarget.blur();
-        }
-      }}
-      className={`w-full bg-transparent p-0 outline-none caret-off-black ${className}`}
-      aria-label="Name"
-    />
+    <div className="min-h-[1lh]">
+      {editing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={() => onCommit?.()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+            if (event.key === "Escape") {
+              event.currentTarget.blur();
+            }
+          }}
+          className={sharedClass}
+          aria-label="Name"
+        />
+      ) : (
+        <h1 className={sharedClass}>{value}</h1>
+      )}
+    </div>
   );
 }
