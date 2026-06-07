@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { usePullGesture } from "@/lib/pullGesture";
+import { FLOATING_NAV_INSET } from "@/lib/navLayout";
 import { useCallback, useRef, type ReactNode } from "react";
 
 const THRESHOLD = 72;
@@ -71,6 +72,7 @@ export function PullToDismiss({
         <div
           ref={scrollRef}
           className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
+          style={{ paddingBottom: FLOATING_NAV_INSET }}
         >
           {children}
         </div>

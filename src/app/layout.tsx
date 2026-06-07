@@ -5,7 +5,6 @@ import { AppShell } from "@/components/AppShell";
 import { AppPageTransition } from "@/components/AppPageTransition";
 import FloatingNav from "@/components/FloatingNav";
 import { FloatingNavProvider } from "@/contexts/FloatingNavContext";
-import { FLOATING_NAV_INSET } from "@/lib/navLayout";
 
 import "./globals.css";
 
@@ -30,10 +29,7 @@ export default function RootLayout({
       <body className="min-h-full bg-background font-sans text-foreground">
         <FloatingNavProvider>
           <AppShell>
-            <main
-              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-              style={{ paddingBottom: FLOATING_NAV_INSET }}
-            >
+            <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               <AppPageTransition>{children}</AppPageTransition>
             </main>
             <FloatingNav />

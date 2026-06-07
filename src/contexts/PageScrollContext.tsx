@@ -36,7 +36,7 @@ export function TabPageLayout({ header, children }: TabPageLayoutProps) {
 
   return (
     <PageScrollContext.Provider value={{ scrollRef, pinned: true }}>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none">
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden overscroll-none">
         <div className="relative z-30 shrink-0">{header}</div>
         <div
           ref={scrollRef}

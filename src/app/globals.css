@@ -62,13 +62,19 @@ body {
   html {
     font-size: 17px;
     height: 100dvh;
-    overflow: hidden;
   }
 
   body {
+    display: flex;
+    flex-direction: column;
     height: 100dvh;
+    max-height: 100dvh;
     overflow: hidden;
     overscroll-behavior: none;
+  }
+
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
   }
 }
 

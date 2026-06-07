@@ -110,9 +110,12 @@ export function DetailStackLayout({
     return () => window.clearTimeout(timer);
   }, [pendingHref, finishDismiss]);
 
+  const listShellClass =
+    "flex min-h-0 flex-1 flex-col overflow-hidden";
+
   const listBody = listDimmed ? (
     <motion.div
-      className="min-h-full"
+      className={listShellClass}
       initial={false}
       animate={listUnderlay}
       transition={sheetTransition}
@@ -120,7 +123,7 @@ export function DetailStackLayout({
       {list}
     </motion.div>
   ) : (
-    <div className="min-h-full">{list}</div>
+    <div className={listShellClass}>{list}</div>
   );
 
   if (shouldReduceMotion) {
@@ -139,7 +142,7 @@ export function DetailStackLayout({
   }
 
   return (
-    <div className="relative min-h-full min-w-0 flex-1">
+    <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
       {listBody}
 
       {!showOverlay && hideDuplicateDetail ? (
