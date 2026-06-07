@@ -120,3 +120,5 @@ export const SEED_ITEMS: ClothingItem[] = [
   item("shoe-4", "brown loafers", "shoe", "loafers", "brown", "formal"),
   item("shoe-5", "espresso boots", "shoe", "boots", "brown", "formal"),
 ];
+
+export const SEED_ITEM_IDS = new Set(SEED_ITEMS.map((item) => item.id));

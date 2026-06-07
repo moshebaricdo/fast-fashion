@@ -7,6 +7,7 @@ import {
 
 export {
   ArrowLeft,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronUp,

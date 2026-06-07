@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { SEED_ITEMS } from "@/lib/seedData";
+import { SEED_ITEM_IDS, SEED_ITEMS } from "@/lib/seedData";
 import type {
   ClothingItem,
   Collection,
@@ -11,6 +11,8 @@ import type {
 const ITEMS_KEY = "wardrobe-items";
 const OUTFITS_KEY = "wardrobe-outfits";
 const COLLECTIONS_KEY = "wardrobe-collections";
+const STORAGE_VERSION_KEY = "wardrobe-storage-version";
+const STORAGE_VERSION = 2;
 
 function isBrowser(): boolean {
   return typeof window !== "undefined";
@@ -70,8 +72,39 @@ function writeCollections(collections: Collection[]): void {
   window.localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(collections));
 }
 
-function ensureSeeded(): void {
+function migrateStorage(): void {
   if (!isBrowser()) return;
+
+  const version = Number(window.localStorage.getItem(STORAGE_VERSION_KEY) ?? "1");
+  if (version >= STORAGE_VERSION) return;
+
+  const items = readItemsRaw().filter((item) => !SEED_ITEM_IDS.has(item.id));
+  writeItems(items);
+
+  const outfits = readOutfits()
+    .map((outfit) => {
+      const topItemId = SEED_ITEM_IDS.has(outfit.topItemId) ? "" : outfit.topItemId;
+      const bottomItemId = SEED_ITEM_IDS.has(outfit.bottomItemId)
+        ? ""
+        : outfit.bottomItemId;
+      const shoeItemId = SEED_ITEM_IDS.has(outfit.shoeItemId) ? "" : outfit.shoeItemId;
+      const layerItemId =
+        outfit.layerItemId && SEED_ITEM_IDS.has(outfit.layerItemId)
+          ? undefined
+          : outfit.layerItemId;
+
+      return { ...outfit, topItemId, bottomItemId, shoeItemId, layerItemId };
+    })
+    .filter(
+      (outfit) => outfit.topItemId && outfit.bottomItemId && outfit.shoeItemId,
+    );
+  writeOutfits(outfits);
+
+  window.localStorage.setItem(STORAGE_VERSION_KEY, String(STORAGE_VERSION));
+}
+
+function ensureSeeded(): void {
+  if (!isBrowser() || process.env.NODE_ENV !== "development") return;
 
   const items = readItemsRaw();
   if (items.length === 0) {
@@ -79,8 +112,13 @@ function ensureSeeded(): void {
   }
 }
 
-export function getItems(): ClothingItem[] {
+function prepareStorage(): void {
+  migrateStorage();
   ensureSeeded();
+}
+
+export function getItems(): ClothingItem[] {
+  prepareStorage();
   return readItemsRaw();
 }
 
@@ -132,7 +170,7 @@ export function getItemsByIds(ids: string[]): ClothingItem[] {
 }
 
 export function getOutfits(): Outfit[] {
-  ensureSeeded();
+  prepareStorage();
   return readOutfits();
 }
 
@@ -271,9 +309,9 @@ export function createOutfit(
   });
 }
 
-/** Seeds localStorage on first load and returns all items. */
+/** Initializes localStorage and returns all items. */
 export function initializeStorage(): ClothingItem[] {
-  ensureSeeded();
+  prepareStorage();
   return readItemsRaw();
 }
 

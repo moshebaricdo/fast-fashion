@@ -9,17 +9,27 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { FilterPanel } from "@/components/FilterBar/FilterPanel";
+import { UploadStagingPopover } from "@/components/UploadStaging/UploadStagingPopover";
 import { StickyChrome } from "@/components/ui/StickyChrome";
 import { ToolbarIconButton } from "@/components/ui/ToolbarIconButton";
 import { toolbarOutlineInput, toolbarPopoverSurface } from "@/components/ui/toolbarStyles";
 import type { InventoryFilters } from "@/types/wardrobe";
 
+export interface UploadStagingSlot {
+  open: boolean;
+  locked: boolean;
+  onClose: () => void;
+  panel: ReactNode;
+}
+
 interface InventoryToolbarProps {
   filters: InventoryFilters;
   onFiltersChange: (filters: InventoryFilters) => void;
   onAddClick: () => void;
+  uploadStaging?: UploadStagingSlot;
 }
 
 /** Strong ease-out — responsive start, soft settle, no overshoot past bounds */
@@ -105,6 +115,7 @@ export function InventoryToolbar({
   filters,
   onFiltersChange,
   onAddClick,
+  uploadStaging,
 }: InventoryToolbarProps) {
   const [searchPhase, setSearchPhase] = useState<SearchPhase>("closed");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -113,6 +124,7 @@ export function InventoryToolbar({
   const headerRef = useRef<HTMLElement>(null);
   const slotRef = useRef<HTMLDivElement>(null);
   const filterAnchorRef = useRef<HTMLDivElement>(null);
+  const addAnchorRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [popoverOrigin, setPopoverOrigin] = useState("16px 0px");
   const shouldReduceMotion = useReducedMotion();
@@ -194,6 +206,10 @@ export function InventoryToolbar({
   const toggleFilter = () => {
     setFilterOpen((open) => !open);
   };
+
+  useEffect(() => {
+    if (uploadStaging?.open) setFilterOpen(false);
+  }, [uploadStaging?.open]);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -287,14 +303,30 @@ export function InventoryToolbar({
           variant="secondary"
           {...(searchOpen ? {} : OPTICAL_ICON)}
         />
-        <ToolbarIconButton
-          label="Add items"
-          icon={Plus}
-          onClick={onAddClick}
-          variant="primary"
-          strokeWidth={2}
-        />
+        <div ref={addAnchorRef} className="shrink-0">
+          <ToolbarIconButton
+            label="Add items"
+            icon={Plus}
+            onClick={onAddClick}
+            variant="primary"
+            strokeWidth={2}
+            active={uploadStaging?.open}
+            aria-expanded={uploadStaging?.open ?? false}
+          />
+        </div>
       </header>
+
+      {uploadStaging && (
+        <UploadStagingPopover
+          open={uploadStaging.open}
+          locked={uploadStaging.locked}
+          onClose={uploadStaging.onClose}
+          containerRef={containerRef}
+          anchorRef={addAnchorRef}
+        >
+          {uploadStaging.panel}
+        </UploadStagingPopover>
+      )}
 
       <AnimatePresence>
         {searchPhase === "open" && filterOpen && (

@@ -9,13 +9,16 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
-import { Plus, Heart } from "@/components/icons";
+import { Plus, Heart, Shirt } from "@/components/icons";
+import { WardrobeEmptyState } from "@/components/EmptyState/WardrobeEmptyState";
+import { useUploadItemsFlow } from "@/hooks/useUploadItemsFlow";
 import { CollectionCard } from "@/components/Favorites/CollectionCard";
 import { SaveToCollectionPanel } from "@/components/Favorites/SaveToCollectionPanel";
+import { UploadStagingPopover } from "@/components/UploadStaging/UploadStagingPopover";
 import { PageToolbar } from "@/components/ui/PageToolbar";
 import { ToolbarIconButton } from "@/components/ui/ToolbarIconButton";
 import { toolbarPopoverSurface } from "@/components/ui/toolbarStyles";
-import { createCollection, getCollections, getFavoriteOutfits } from "@/lib/storage";
+import { createCollection, getCollections, getFavoriteOutfits, getItems } from "@/lib/storage";
 import type { Collection, Outfit } from "@/types/wardrobe";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -59,9 +62,11 @@ export default function FavoritesPage() {
   const [outfitsByCollection, setOutfitsByCollection] = useState<
     Record<string, Outfit[]>
   >({});
+  const [wardrobeCount, setWardrobeCount] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const createAnchorRef = useRef<HTMLDivElement>(null);
+  const uploadAnchorRef = useRef<HTMLDivElement>(null);
   const [popoverTop, setPopoverTop] = useState(0);
   const [popoverOrigin, setPopoverOrigin] = useState("right 0px");
   const shouldReduceMotion = useReducedMotion();
@@ -77,7 +82,10 @@ export default function FavoritesPage() {
 
     setCollections(nextCollections);
     setOutfitsByCollection(nextOutfits);
+    setWardrobeCount(getItems().length);
   }, []);
+
+  const upload = useUploadItemsFlow(refresh);
 
   useEffect(() => {
     refresh();
@@ -104,6 +112,10 @@ export default function FavoritesPage() {
     window.addEventListener("resize", updatePosition);
     return () => window.removeEventListener("resize", updatePosition);
   }, [createOpen]);
+
+  useEffect(() => {
+    if (upload.stagingOpen) setCreateOpen(false);
+  }, [upload.stagingOpen]);
 
   useEffect(() => {
     if (!createOpen) return;
@@ -152,6 +164,22 @@ export default function FavoritesPage() {
           }
         />
 
+        <div
+          ref={uploadAnchorRef}
+          className="pointer-events-none absolute bottom-0 left-1/2 h-0 w-px -translate-x-1/2"
+          aria-hidden="true"
+        />
+
+        <UploadStagingPopover
+          open={upload.stagingOpen}
+          locked={upload.stagingLocked}
+          onClose={upload.closeStaging}
+          containerRef={toolbarRef}
+          anchorRef={uploadAnchorRef}
+        >
+          {upload.stagingPanel}
+        </UploadStagingPopover>
+
         <AnimatePresence>
           {createOpen && (
             <motion.div
@@ -182,20 +210,19 @@ export default function FavoritesPage() {
         </AnimatePresence>
       </div>
 
-      {collections.length === 0 ? (
-        <div className="flex flex-col items-center px-6 pt-10 text-center">
-          <Heart size={32} strokeWidth={1.5} className="text-stone" />
-          <p className="mt-4 max-w-xs text-sm leading-relaxed text-stone">
-            Create your first collection to save outfits from Today&apos;s Fit.
-          </p>
-          <button
-            type="button"
-            onClick={openCreate}
-            className="mt-5 rounded-full bg-off-black px-6 py-2.5 text-sm font-medium text-white transition-transform duration-150 ease-out active:scale-[0.97]"
-          >
-            Create collection
-          </button>
-        </div>
+      {wardrobeCount === 0 ? (
+        <WardrobeEmptyState
+          icon={Shirt}
+          description="Add items to your wardrobe before saving outfits to collections."
+          onAction={upload.openFilePicker}
+        />
+      ) : collections.length === 0 ? (
+        <WardrobeEmptyState
+          icon={Heart}
+          description="Create your first collection to save outfits from Today's Fit."
+          actionLabel="Create collection"
+          onAction={openCreate}
+        />
       ) : (
         <div className="grid grid-cols-2 gap-x-4 gap-y-6 px-4 md:grid-cols-3">
           {collections.map((collection) => (
@@ -207,6 +234,8 @@ export default function FavoritesPage() {
           ))}
         </div>
       )}
+
+      {upload.fileInput}
     </div>
   );
 }

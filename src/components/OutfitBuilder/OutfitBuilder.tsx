@@ -10,7 +10,10 @@ import {
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Heart, HeartFilled, Shuffle } from "@/components/icons";
+import { WardrobeEmptyState } from "@/components/EmptyState/WardrobeEmptyState";
+import { useUploadItemsFlow } from "@/hooks/useUploadItemsFlow";
 import { SaveToCollectionPanel } from "@/components/Favorites/SaveToCollectionPanel";
+import { UploadStagingPopover } from "@/components/UploadStaging/UploadStagingPopover";
 import { OutfitPanel } from "@/components/OutfitBuilder/OutfitPanel";
 import { PullToShuffle } from "@/components/OutfitBuilder/PullToShuffle";
 import { PageToolbar } from "@/components/ui/PageToolbar";
@@ -152,6 +155,7 @@ export function OutfitBuilder() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const heartAnchorRef = useRef<HTMLDivElement>(null);
+  const uploadAnchorRef = useRef<HTMLDivElement>(null);
   const segmentAnchorRef = useRef<HTMLDivElement>(null);
   const [popoverTop, setPopoverTop] = useState(0);
   const [popoverOrigin, setPopoverOrigin] = useState("right 0px");
@@ -160,6 +164,13 @@ export function OutfitBuilder() {
   const refreshCollections = useCallback(() => {
     setCollections(getCollections());
   }, []);
+
+  const refreshWardrobe = useCallback(() => {
+    setItems(getItems());
+    refreshCollections();
+  }, [refreshCollections]);
+
+  const upload = useUploadItemsFlow(refreshWardrobe);
 
   const clearSavedState = useCallback(() => {
     setIsSaved(false);
@@ -311,6 +322,10 @@ export function OutfitBuilder() {
   }, [savePopoverOpen]);
 
   useEffect(() => {
+    if (upload.stagingOpen) setSavePopoverOpen(false);
+  }, [upload.stagingOpen]);
+
+  useEffect(() => {
     if (!savePopoverOpen) return;
 
     const handlePointerDown = (event: MouseEvent) => {
@@ -381,6 +396,8 @@ export function OutfitBuilder() {
     return <div className="flex h-full min-h-0 flex-col" />;
   }
 
+  const isWardrobeEmpty = items.length === 0;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div ref={toolbarRef} className="relative shrink-0">
@@ -424,6 +441,7 @@ export function OutfitBuilder() {
                 label="Shuffle fit"
                 icon={Shuffle}
                 onClick={handleFullShuffle}
+                disabled={isWardrobeEmpty}
                 variant="primary"
                 iconSize={18}
                 strokeWidth={1.75}
@@ -432,6 +450,22 @@ export function OutfitBuilder() {
             </>
           }
         />
+
+        <div
+          ref={uploadAnchorRef}
+          className="pointer-events-none absolute bottom-0 left-1/2 h-0 w-px -translate-x-1/2"
+          aria-hidden="true"
+        />
+
+        <UploadStagingPopover
+          open={upload.stagingOpen}
+          locked={upload.stagingLocked}
+          onClose={upload.closeStaging}
+          containerRef={toolbarRef}
+          anchorRef={uploadAnchorRef}
+        >
+          {upload.stagingPanel}
+        </UploadStagingPopover>
 
         <AnimatePresence>
           {savePopoverOpen && (
@@ -462,20 +496,32 @@ export function OutfitBuilder() {
         </AnimatePresence>
       </div>
 
-      <PullToShuffle onShuffle={handleFullShuffle}>
-        <OutfitPanel
-          top={outfit.top ?? null}
-          bottom={outfit.bottom ?? null}
-          shoe={outfit.shoe ?? null}
-          layer={outfit.layer ?? null}
-          layerEnabled={layerEnabled}
-          animateKeys={animateKeys}
-          fullShuffleStamp={fullShuffleStamp}
-          onShuffleSlot={handleSlotShuffle}
-          onAddLayer={handleAddLayer}
-          onRemoveLayer={handleRemoveLayer}
-        />
-      </PullToShuffle>
+      {isWardrobeEmpty ? (
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          <WardrobeEmptyState
+            icon={Shuffle}
+            description="Add your first pieces to start getting daily outfit suggestions."
+            onAction={upload.openFilePicker}
+          />
+        </div>
+      ) : (
+        <PullToShuffle onShuffle={handleFullShuffle}>
+          <OutfitPanel
+            top={outfit.top ?? null}
+            bottom={outfit.bottom ?? null}
+            shoe={outfit.shoe ?? null}
+            layer={outfit.layer ?? null}
+            layerEnabled={layerEnabled}
+            animateKeys={animateKeys}
+            fullShuffleStamp={fullShuffleStamp}
+            onShuffleSlot={handleSlotShuffle}
+            onAddLayer={handleAddLayer}
+            onRemoveLayer={handleRemoveLayer}
+          />
+        </PullToShuffle>
+      )}
+
+      {upload.fileInput}
     </div>
   );
 }
