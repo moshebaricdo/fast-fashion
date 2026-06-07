@@ -61,10 +61,13 @@ body {
 @media (max-width: 767px) {
   html {
     font-size: 17px;
+    height: 100dvh;
+    overflow: hidden;
   }
 
-  html,
   body {
+    height: 100dvh;
+    overflow: hidden;
     overscroll-behavior: none;
   }
 }

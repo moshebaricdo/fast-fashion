@@ -36,14 +36,7 @@ export function TabPageLayout({ header, children }: TabPageLayoutProps) {
 
   return (
     <PageScrollContext.Provider value={{ scrollRef, pinned: true }}>
-      <div
-        className="flex min-w-0 flex-col overflow-hidden overscroll-none"
-        style={{
-          height: "100dvh",
-          maxHeight: "100dvh",
-          marginBottom: `calc(-1 * (${FLOATING_NAV_INSET}))`,
-        }}
-      >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden overscroll-none">
         <div className="relative z-30 shrink-0">{header}</div>
         <div
           ref={scrollRef}

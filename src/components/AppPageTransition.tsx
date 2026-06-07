@@ -11,7 +11,7 @@ interface AppPageTransitionProps {
 }
 
 const TRANSITION_HOST =
-  "relative flex min-h-dvh min-w-0 flex-1 flex-col";
+  "relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden";
 
 /**
  * Persistent AnimatePresence host. template.tsx supplies the keyed motion

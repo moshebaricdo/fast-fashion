@@ -18,7 +18,9 @@ export default function Template({ children }: { children: ReactNode }) {
 
   if (shouldReduceMotion || !isTab) {
     return (
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col">{children}</div>
+      <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        {children}
+      </div>
     );
   }
 
@@ -26,7 +28,7 @@ export default function Template({ children }: { children: ReactNode }) {
     <motion.div
       key={pathname}
       layout={false}
-      className="flex min-h-dvh w-full min-w-0 flex-col"
+      className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
       initial={{ opacity: 0, y: 6 }}
       animate={{
         opacity: 1,

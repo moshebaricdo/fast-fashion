@@ -31,7 +31,7 @@ export default function RootLayout({
         <FloatingNavProvider>
           <AppShell>
             <main
-              className="flex min-h-0 min-w-0 flex-1 flex-col"
+              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
               style={{ paddingBottom: FLOATING_NAV_INSET }}
             >
               <AppPageTransition>{children}</AppPageTransition>
