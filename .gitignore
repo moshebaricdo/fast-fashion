@@ -1,0 +1,2 @@
+# Each project has its own .gitignore (ios/, web-prototype/). Only repo-wide entries go here.
+.DS_Store
