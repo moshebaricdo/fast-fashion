@@ -70,7 +70,7 @@ swift test
 ```
 
 On Linux, install a Swift 6.2+ toolchain with [swiftly](https://www.swift.org/install/linux/).
-CI runs these tests on Linux for every push and pull request.
+CI runs these tests on Linux whenever the package changes (`.github/workflows/outfit-engine.yml`).
 
 ## How the engine works
 
